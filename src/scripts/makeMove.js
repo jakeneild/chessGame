@@ -4,19 +4,19 @@ var makeMove = function(classList, id){
 
     if(classList === "active"){
         if(data.selectedPiece.includes("k") && id === "76"){
-            data.executeMove("whiteCastleRight")
+            data.executeMove.start("whiteCastleRight")
         } else if (data.selectedPiece.includes("k") && id === "72"){
-            data.executeMove("whiteCastleLeft")
+            data.executeMove.start("whiteCastleLeft")
         } else if(data.selectedPiece.includes("k") && id === "02"){
-            data.executeMove("blackCastleLeft")
+            data.executeMove.start("blackCastleLeft")
         } else if(data.selectedPiece.includes("k") && id === "06"){
-            data.executeMove("blackCastleRight")
+            data.executeMove.start("blackCastleRight")
         } else {
             let f = id;
             if(id.length > 2){
                 f = id.slice(2,4);
             }
-            data.executeMove(data.selectedPiece+f)
+            data.executeMove.start(data.selectedPiece+f)
         }
     }
 }

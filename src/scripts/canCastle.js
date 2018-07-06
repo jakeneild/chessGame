@@ -22,7 +22,7 @@ var canCastle = function (turn) {
             }
         }
         for (let i = 1; i < data.history.length; i += 2) {  //looking for checks
-            if (data.history[i].includes("!")) {
+            if (data.history[i].includes("!") || data.history[i].includes("castle")) {
                 arr = [0, 0]
             }
         }
@@ -81,7 +81,7 @@ var canCastle = function (turn) {
             arr = [0, 0];
         }
         for (let i = 1; i < data.history.length; i += 2) {
-            if (data.history[i].includes("k")) {
+            if (data.history[i].includes("k") || data.history[i].includes("castle")) {
                 arr = [0, 0];
             }
             if (data.history[i].slice(2, 4) === "00") {

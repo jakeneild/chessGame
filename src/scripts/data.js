@@ -79,10 +79,13 @@ var data = {
                             if (data.board[i - 1][j] === "e") {          //single move forward
                                 let move = `${piece}${i}${j}${i - 1}${j}`
                                 data.legalMovesPush(move)
-                                if (data.board[i - 2][j] === "e" && i === 6) {  //double move forward
-                                    let move = `${piece}${i}${j}${i - 2}${j}`
-                                    data.legalMovesPush(move)
+                                if (data.board[i - 2] !== undefined) {
+                                    if (data.board[i - 2][j] === "e" && i === 6) {  //double move forward
+                                        let move = `${piece}${i}${j}${i - 2}${j}`
+                                        data.legalMovesPush(move)
+                                    }
                                 }
+
                             }
                             if (data.board[i - 1][j - 1] !== undefined) {
                                 if (data.board[i - 1][j - 1].includes("B")) {  //take to the left W
@@ -100,9 +103,11 @@ var data = {
                             if (data.board[i + 1][j] === "e") {          //single move forward
                                 let move = `${piece}${i}${j}${i + 1}${j}`
                                 data.legalMovesPush(move)
-                                if (data.board[i + 2][j] === "e" && i === 1) {  //double move forward
-                                    let move = `${piece}${i}${j}${i + 2}${j}`
-                                    data.legalMovesPush(move)
+                                if (data.board[i + 2] !== undefined) {
+                                    if (data.board[i + 2][j] === "e" && i === 1) {  //double move forward
+                                        let move = `${piece}${i}${j}${i + 2}${j}`
+                                        data.legalMovesPush(move)
+                                    }
                                 }
                             }
                             if (data.board[i + 1][j - 1] !== undefined) {
@@ -575,166 +580,178 @@ var data = {
             }
         }
     },
-    executeMove: function (move) {
-        console.log("execute move start board pos: ", data.board)
-        let isLegal = false;
-        for (item in data.legalMoves) {
-            for (let i = 0; i < data.legalMoves[item].length; i++) {
-                if (data.legalMoves[item][i] === move) {
-                    isLegal = true;
-                }
-            }
-        }
-        //I don't think any of this is neccessary
-        /*let fakeData = data;
-        let ki = ""
-        let kj = "";
-        for (let k = 0; k < 8; k++) {//find the king
-            for (let l = 0; k < 8; k++) {
-                if (fakeData.board[i][j] === `${opponent}k`) {
-                    ki = i;
-                    kj = j;
-                }
-            }
-        }
-        if (opponent === "W") {  //checking for pawns
-            if (fakeData.board[ki + 1][kj + 1] === `${opponent}p` || fakeData.board[ki + 1][k - 1] === `${opponent}p`) {
-                isLegal = false;
-            }
-        } else {
-            if (fakeData.board[ki - 1][kj + 1] === `${opponent}p` || fakeData.board[ki - 1][k - 1] === `${opponent}p`) {
-                isLegal = false;
-            }
-        }
-        let array = [];
-        function lineCheck(inc1, inc2) {
-            for (let m = 1; m < 8; m++) {
-                if (fakeData.board[i + inc1][j + inc2] !== "e" && fakeData.board[i + inc1][j + inc2] !== undefined) {
-                    if (fakeData.board[i + inc1][j + inc2] === opponent + "k" && m === 1) {
-                        array.push("!")
+    executeMove: {
+        start: function (move) {
+            console.log("move:", move)
+            let pawnPromotionCheck = require("./pawnPromotionCheck")
+            console.log("execute move start board pos: ", data.board)
+            pawnPromotionCheck.run();
+            pawnPromotionCheck.finish(move);
+        },
+        finish: function (move) {
+            let isLegal = false;
+            for (item in data.legalMoves) {
+                for (let i = 0; i < data.legalMoves[item].length; i++) {
+                    if (data.legalMoves[item][i] === move) {
+                        isLegal = true;
                     }
-                    array.push(fakeData.board[i + inc1][j + inc2]);
-                    m = 8;
-                } else if (fakeData.board[i + inc1][j + inc2] === undefined) {
-                    array.push("e")
                 }
             }
-            return array;
-        }
-        for (let a = -1; a <= 1; a++) {
-            for (let b = -1; b <= 1; b++) {
-                lineCheck(a, b)
+            //I don't think any of this is neccessary
+            /*let fakeData = data;
+            let ki = ""
+            let kj = "";
+            for (let k = 0; k < 8; k++) {//find the king
+                for (let l = 0; k < 8; k++) {
+                    if (fakeData.board[i][j] === `${opponent}k`) {
+                        ki = i;
+                        kj = j;
+                    }
+                }
             }
-        }
-        if (array.includes("!") || array.includes(`${turn}q`)) { //check for kings and queens
-            isLegal = false;
-        }
-        for (let c = 0; c < 9; c += 2) { //check diagonals
-            if (array[c] === `${turn}b`) {
-                isLegal = false;
-            }
-        }
-        for (let c = 0; c < 9; c += 2) { //check straights
-            if (array[c] === `${turn}r`) {
-                isLegal = false;
-            }
-        }
-        var knightKingCheck = function (lMove) {
-            for (item in lMove) {
-                if (data.board[ki + lMove.item[1]][kj + lMove.item[2]] === `${turn}n`) {
+            if (opponent === "W") {  //checking for pawns
+                if (fakeData.board[ki + 1][kj + 1] === `${opponent}p` || fakeData.board[ki + 1][k - 1] === `${opponent}p`) {
+                    isLegal = false;
+                }
+            } else {
+                if (fakeData.board[ki - 1][kj + 1] === `${opponent}p` || fakeData.board[ki - 1][k - 1] === `${opponent}p`) {
                     isLegal = false;
                 }
             }
-        }
-        knightKingCheck(2, 1)
-        knightKingCheck(2, -1)
-        knightKingCheck(-2, 1)
-        knightKingCheck(-2, -1)
-        knightKingCheck(1, 2)
-        knightKingCheck(1, -2)
-        knightKingCheck(-1, 2)
-        knightKingCheck(-1, -2)*/
-
-        //finally finished with checking
-        console.log("move", move)
-
-        if (isLegal === false) {
-            console.log("Invalid move")
-        } else {
-            if (!move.includes("Castle")) {
-                document.getElementById("info").innerHTML = "";
-                let piece = move.slice(0, 2);
-                let ogPosi = move.slice(2, 3);
-                let ogPosj = move.slice(3, 4);
-                let newPosi = move.slice(4, 5);
-                let newPosj = move.slice(5, 6);
-
-                data.board[newPosi][newPosj] = piece;
-                data.board[ogPosi][ogPosj] = "e";
-            } else if (move === "whiteCastleLeft") {
-                data.board[7][0] = "e"
-                data.board[7][2] = "Wk"
-                data.board[7][3] = "Wr"
-                data.board[7][4] = "e"
-            } else if (move === "whiteCastleRight") {
-                data.board[7][4] = "e"
-                data.board[7][5] = "Wr"
-                data.board[7][6] = "Wk"
-                data.board[7][7] = "e"
-            } else if (move === "blackCastleLeft") {
-                data.board[0][0] = "e"
-                data.board[0][2] = "Bk"
-                data.board[0][3] = "Br"
-                data.board[0][4] = "e"
-            } else if (move === "blackCastleRight") {
-                data.board[0][4] = "e"
-                data.board[0][5] = "Br"
-                data.board[0][6] = "Bk"
-                data.board[0][7] = "e"
-            }
-            var isInCheck = require("./isInCheck")
-            if (isInCheck(data.opponent)) {
-                data.history.push(`${move}!`)
-                p = document.createElement("p")
-                if (data.opponent === "B") {
-                    p.textContent = "Black is in check!"
-                } else {
-                    p.textContent = "White is in check!"
-                }
-
-                document.getElementById("info").appendChild(p);
-
-            } else {
-                data.history.push(move)
-            }
-
-            data.turnSwitch();
-            data.legalMoves = {};
-            data.getLegalMoves();
-            data.removeChecks();
-            let domPrinter = require("./domPrinter")
-            domPrinter();
-            selectedPiece = "";
-            console.log("board after move: ", data.board)
-
-            let count = 0
-            for (item in data.legalMoves) {
-                count = count + data.legalMoves[item].length
-            }
-            if (count === 0) {
-                if (data.history[data.history.length - 1].includes("!")) {
-                    if (data.opponent === "W") {
-                        document.getElementById("info").firstChild.textContent = "Checkmate! White wins!"
-                    } else {
-                        document.getElementById("info").firstChild.textContent = "Checkmate! Black wins!"
+            let array = [];
+            function lineCheck(inc1, inc2) {
+                for (let m = 1; m < 8; m++) {
+                    if (fakeData.board[i + inc1][j + inc2] !== "e" && fakeData.board[i + inc1][j + inc2] !== undefined) {
+                        if (fakeData.board[i + inc1][j + inc2] === opponent + "k" && m === 1) {
+                            array.push("!")
+                        }
+                        array.push(fakeData.board[i + inc1][j + inc2]);
+                        m = 8;
+                    } else if (fakeData.board[i + inc1][j + inc2] === undefined) {
+                        array.push("e")
                     }
-                } else {
-                    p = document.createElement("p")
-                    p.textContent = "There is a draw"
-                    document.getElementById("info").appendChild(p)
+                }
+                return array;
+            }
+            for (let a = -1; a <= 1; a++) {
+                for (let b = -1; b <= 1; b++) {
+                    lineCheck(a, b)
                 }
             }
+            if (array.includes("!") || array.includes(`${turn}q`)) { //check for kings and queens
+                isLegal = false;
+            }
+            for (let c = 0; c < 9; c += 2) { //check diagonals
+                if (array[c] === `${turn}b`) {
+                    isLegal = false;
+                }
+            }
+            for (let c = 0; c < 9; c += 2) { //check straights
+                if (array[c] === `${turn}r`) {
+                    isLegal = false;
+                }
+            }
+            var knightKingCheck = function (lMove) {
+                for (item in lMove) {
+                    if (data.board[ki + lMove.item[1]][kj + lMove.item[2]] === `${turn}n`) {
+                        isLegal = false;
+                    }
+                }
+            }
+            knightKingCheck(2, 1)
+            knightKingCheck(2, -1)
+            knightKingCheck(-2, 1)
+            knightKingCheck(-2, -1)
+            knightKingCheck(1, 2)
+            knightKingCheck(1, -2)
+            knightKingCheck(-1, 2)
+            knightKingCheck(-1, -2)*/
+
+            //finally finished with checking
+            console.log("move", move)
+
+            if (isLegal === false) {
+                console.log("Invalid move")
+            } else {
+                if (!move.includes("Castle")) {
+                    document.getElementById("info").innerHTML = "";
+                    let piece = move.slice(0, 2);
+                    let ogPosi = move.slice(2, 3);
+                    let ogPosj = move.slice(3, 4);
+                    let newPosi = move.slice(4, 5);
+                    let newPosj = move.slice(5, 6);
+
+                    data.board[newPosi][newPosj] = piece;
+                    data.board[ogPosi][ogPosj] = "e";
+                } else if (move === "whiteCastleLeft") {
+                    data.board[7][0] = "e"
+                    data.board[7][2] = "Wk"
+                    data.board[7][3] = "Wr"
+                    data.board[7][4] = "e"
+                } else if (move === "whiteCastleRight") {
+                    data.board[7][4] = "e"
+                    data.board[7][5] = "Wr"
+                    data.board[7][6] = "Wk"
+                    data.board[7][7] = "e"
+                } else if (move === "blackCastleLeft") {
+                    data.board[0][0] = "e"
+                    data.board[0][2] = "Bk"
+                    data.board[0][3] = "Br"
+                    data.board[0][4] = "e"
+                } else if (move === "blackCastleRight") {
+                    data.board[0][4] = "e"
+                    data.board[0][5] = "Br"
+                    data.board[0][6] = "Bk"
+                    data.board[0][7] = "e"
+                }
+                var isInCheck = require("./isInCheck")
+                if (isInCheck(data.opponent)) {
+                    data.history.push(`${move}!`)
+                    p = document.createElement("p")
+                    if (data.opponent === "B") {
+                        p.textContent = "Black is in check!"
+                    } else {
+                        p.textContent = "White is in check!"
+                    }
+
+                    document.getElementById("info").appendChild(p);
+
+                } else {
+                    data.history.push(move)
+                }
+
+
+                data.turnSwitch();
+                data.legalMoves = {};
+                data.getLegalMoves();
+                data.removeChecks();
+                let domPrinter = require("./domPrinter")
+                domPrinter();
+                selectedPiece = "";
+                console.log("board after move: ", data.board)
+
+                let count = 0
+                for (item in data.legalMoves) {
+                    count = count + data.legalMoves[item].length
+                }
+                if (count === 0) {
+                    if (data.history[data.history.length - 1].includes("!")) {
+                        if (data.opponent === "W") {
+                            document.getElementById("info").firstChild.textContent = "Checkmate! White wins!"
+                        } else {
+                            document.getElementById("info").firstChild.textContent = "Checkmate! Black wins!"
+                        }
+                    } else {
+                        p = document.createElement("p")
+                        p.textContent = "There is a draw"
+                        document.getElementById("info").appendChild(p)
+                    }
+                }
+
+
+            }
         }
+
     },
     selectedPiece: ""
 }
