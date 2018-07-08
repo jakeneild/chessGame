@@ -351,7 +351,7 @@ var data = {
                                     if (data.board[i + k][j + k] === "e") {
                                         let move = `${piece}${i}${j}${i + k}${j + k}`
                                         data.legalMovesPush(move)
-                                    } else if (data.board[i + k][j].includes(data.opponent)) {
+                                    } else if (data.board[i + k][j + k].includes(data.opponent)) {
                                         let move = `${piece}${i}${j}${i + k}${j + k}`
                                         data.legalMovesPush(move)
                                         k = 8
