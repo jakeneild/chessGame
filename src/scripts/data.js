@@ -748,10 +748,19 @@ var data = {
                     }
                 }
 
-
+                if (document.getElementById("aiMove") === null || document.getElementById("aiMove") === undefined) {
+                    let button = document.createElement("button")
+                    button.id = "aiMove"
+                    button.type = "button"
+                    ai = require("./ai")
+                    button.addEventListener("click", function () {
+                        ai.execute(data.board, data.turn);
+                    })
+                    button.textContent = "Make AI move"
+                    document.getElementById("info").appendChild(button)
+                }
             }
         }
-
     },
     selectedPiece: ""
 }

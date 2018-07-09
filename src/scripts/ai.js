@@ -1,6 +1,37 @@
-let data = require("./data")
+const ai = {
+    execute: function (board, turn){
+        console.log("begin AI calculation")
+        const obj = ai.smartScore(board, turn)
+        console.log("smartScore complete", obj)
+        let bestMove = ""
+        let bestMeta = -999;
+        if(turn === "B"){
+            bestMeta = 999
+        }
+        for(item in obj.start){
+            if(item !== "meta" && item !== "score" && item !== "turn" !== item !== "board"){
+                if(obj.start[item].meta !== undefined){
+                    if(turn === "W"){
+                        if(obj.start[item].meta > bestMeta){
+                            bestMeta = obj.start[item].meta
+                            bestMove = item;
+                        }
+                    } else {
+                        if(obj.start[item].meta < bestMeta){
+                            bestMeta = obj.start[item].meta
+                            bestMove = item;
+                        }
+                    }
+                }
+            }
+        }
+        const data = require("./data")
 
-let ai = {
+        console.log("Best move:", bestMove)
+
+        data.legalMoves.bestMove = [bestMove]
+        data.executeMove.start(bestMove)
+    },
     makeMove: function (m, boardInput) {
 
         let newBoard = function (myBoard) {
@@ -683,7 +714,7 @@ let ai = {
 
             return newBoard
         }
-        let changeTurn = function (turn){
+        let changeTurn = function (turn) {
             if (turn === "W") {
                 return "B"
             } else {
@@ -691,31 +722,64 @@ let ai = {
             }
         }
         let iteration = 0;
-        let myObj = {};
-        console.log(board)
-        myObj.start = newBoard(board)
-        console.log(board)
+        let myObj = {
+            start: {}
+        };
+        myObj.start.board = newBoard(board)
 
-        let inc = function(num){
+        let inc = function (num) {
             num++;
             return num
         }
 
         let explore = function (nBoard, turn, iteration, path) {
-
-            if (iteration < 3) {
+            if (iteration < 4) {
                 let arr = ai.getLegalMoves(nBoard, turn);
-                path.legal = arr;
+                path.turn = turn;
                 let nBoard2 = newBoard(nBoard)
                 for (let i = 0; i < arr.length; i++) {
                     let nB = newBoard(nBoard2)
-
-                    path[arr[i]] = {start: newBoard(nB), finish: ai.makeMove(arr[i], newBoard(nB))}
-                    //explore(ai.makeMove(arr[i], nB), changeTurn(turn), inc(iteration), path[arr[i]])
+                    path[arr[i]] = { board: newBoard(ai.makeMove(arr[i], path.board)) }
+                    explore(ai.makeMove(arr[i], nB), changeTurn(turn), inc(iteration), path[arr[i]])
                 }
             }
         }
         explore(newBoard(board), turn, inc(iteration), myObj.start)
+
+        let scoreExplore = function (bObj) {
+            bObj.score = ai.scoreBoard(bObj.board, bObj.turn)
+            for (item in bObj) {
+                if (item !== "turn" && item !== "score" && item !== "board") {
+                    scoreExplore(bObj[item])
+                }
+            }
+        }
+        scoreExplore(myObj.start)
+
+        let metaExplore = function (bObj) {
+            let reducer = (accumulator, currentValue) => accumulator + currentValue;
+            let metaArr = []
+
+            if (Object.keys(bObj).length < 5) {
+                return bObj.score
+            }
+
+            for (item in bObj) {
+                if (item !== "turn" && item !== "score" && item !== "board" && item !== "meta") {
+                    metaArr.push(metaExplore(bObj[item]))
+                }
+            }
+            if(bObj.meta === undefined){
+                bObj.meta = ((metaArr.reduce(reducer)) / metaArr.length)
+            } else {
+                bObj.meta = (((metaArr.reduce(reducer)) / metaArr.length)+bObj.meta)/2
+            }
+            return bObj.meta
+        }
+
+        for(let i = 0; i <=3; i++){
+            metaExplore(myObj.start)
+        }
         return myObj
     },
 
@@ -749,9 +813,7 @@ let ai = {
                 score = score + (worth * mod)
             }
         }
-        console.log(board)
         arr = ai.getLegalMoves(board, turn)
-        console.log(board)
 
         if (ai.isInCheck(board, "W")) { //need to define all these
             score -= 1
