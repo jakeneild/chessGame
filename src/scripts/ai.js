@@ -1,23 +1,23 @@
 const ai = {
-    execute: function (board, turn){
+    execute: function (board, turn) {
         console.log("begin AI calculation")
         const obj = ai.smartScore(board, turn)
         console.log("smartScore complete", obj)
         let bestMove = ""
         let bestMeta = -999;
-        if(turn === "B"){
+        if (turn === "B") {
             bestMeta = 999
         }
-        for(item in obj.start){
-            if(item !== "meta" && item !== "score" && item !== "turn" !== item !== "board"){
-                if(obj.start[item].meta !== undefined){
-                    if(turn === "W"){
-                        if(obj.start[item].meta > bestMeta){
+        for (item in obj.start) {
+            if (item !== "meta" && item !== "score" && item !== "turn" !== item !== "board" && item !== "pruneDump") {
+                if (obj.start[item].meta !== undefined) {
+                    if (turn === "W") {
+                        if (obj.start[item].meta > bestMeta) {
                             bestMeta = obj.start[item].meta
                             bestMove = item;
                         }
                     } else {
-                        if(obj.start[item].meta < bestMeta){
+                        if (obj.start[item].meta < bestMeta) {
                             bestMeta = obj.start[item].meta
                             bestMove = item;
                         }
@@ -382,7 +382,7 @@ const ai = {
                                     if (board[i + k][j + k] === "e") {
                                         let move = `${piece}${i}${j}${i + k}${j + k}`
                                         legalMoves.push(move)
-                                    } else if (board[i + k][j].includes(opponent)) {
+                                    } else if (board[i + k][j + k].includes(opponent)) {
                                         let move = `${piece}${i}${j}${i + k}${j + k}`
                                         legalMoves.push(move)
                                         k = 8
@@ -701,6 +701,92 @@ const ai = {
 
         return check;
     },
+    pruneMeta: function (obj) {
+        console.log("obj before prune: ", obj)
+        let pruneWorst = function (myObjArr, turn) {
+            let meanScoreArr = [];
+            let worstMeta = 999;
+            let worstMove = "filler"
+            let arrPos = 0
+            let worstScore = 0;
+            if (turn === "B") {
+                worstMeta = -999
+            }
+            for (let j = 0; j < myObjArr.length; j++) {
+                meanScoreArr.push(myObjArr[j].score)
+                if (turn === "W") {
+                    if (myObjArr[j].meta < worstMeta) {
+                        worstMeta = myObjArr[j].meta
+                        worstMove = myObjArr[j].move
+                        worstScore = myObjArr[j].score
+                        arrPos = j
+                    }
+                } else {
+                    if (myObjArr[j].meta > worstMeta) {
+                        worstMeta = myObjArr[j].meta
+                        worstMove = myObjArr[j].move
+                        worstScore = myObjArr[j].score
+                        arrPos = j
+                    }
+                }
+            }
+            let meanScoreNum = 0;
+            for (let k = 0; k < meanScoreArr.length; k++) {
+                meanScoreNum += meanScoreArr[k]
+            }
+            meanScoreNum /= meanScoreArr.length
+
+            objArr.splice(arrPos, 1)
+            console.log(worstScore, meanScoreNum)
+
+            if (worstScore <= meanScoreNum && turn === "W") {
+                if (obj.pruneDump === undefined) {
+                    obj.pruneDump = [{ move: worstMove, obj: obj[worstMove] }]
+                } else {
+                    obj.pruneDump.push({ move: worstMove, obj: obj[worstMove] })
+                }
+                delete obj[worstMove]
+            } else if (worstScore >= meanScoreNum && turn === "B") {
+                if (obj.pruneDump === undefined) {
+                    obj.pruneDump = [{ move: worstMove, obj: obj[worstMove] }]
+                } else {
+                    obj.pruneDump.push({ move: worstMove, obj: obj[worstMove] })
+                }
+                delete obj[worstMove]
+            }
+        }
+        let turn = obj.turn
+        let objArr = []
+
+        for (item in obj) {
+            if (item !== "turn" && item !== "score" && item !== "board" && item !== "meta" && item !== "pruneDump") {
+                objArr.push({ move: item, meta: obj[item].meta, score: obj[item].score })
+            }
+        }
+        let length = objArr.length
+        length = Math.round(length / 2)
+
+
+
+
+        for (let i = 0; i < length - 1; i++) {
+            let allTheSame = true;
+            let first = objArr[0].meta
+            for (let i = 0; i < objArr.length; i++) {
+                if (objArr[i].meta !== first) {
+                    allTheSame = false
+                }
+            }
+            if (allTheSame === false) {
+                // console.log("pruneWorst input:", objArr)
+                pruneWorst(objArr, turn);
+
+            }
+
+        }
+        console.log("obj after prune", obj)
+        return obj
+    },
     smartScore: function (board, turn) {
         let newBoard = function (myBoard) {
             let newBoard = [[]];
@@ -732,24 +818,36 @@ const ai = {
             return num
         }
 
-        let explore = function (nBoard, turn, iteration, path) {
-            if (iteration < 4) {
+        let explore = function (nBoard, turn, iteration, path, startAt) {
+            //pawn promotion things
+            for (let i = 0; i < 8; i++) {
+                if (nBoard[0][i] === "Wp") {
+                    nBoard[0][i] === "Wq"
+                }
+                if (nBoard[7][i] === "Bp") {
+                    nBoard[7][i] === "Bq"
+                }
+            }
+
+            if (iteration < 4 && iteration >= startAt) {
                 let arr = ai.getLegalMoves(nBoard, turn);
                 path.turn = turn;
                 let nBoard2 = newBoard(nBoard)
                 for (let i = 0; i < arr.length; i++) {
                     let nB = newBoard(nBoard2)
                     path[arr[i]] = { board: newBoard(ai.makeMove(arr[i], path.board)) }
-                    explore(ai.makeMove(arr[i], nB), changeTurn(turn), inc(iteration), path[arr[i]])
+                    explore(ai.makeMove(arr[i], nB), changeTurn(turn), inc(iteration), path[arr[i]], 0)
                 }
             }
         }
-        explore(newBoard(board), turn, inc(iteration), myObj.start)
+        explore(newBoard(board), turn, inc(iteration), myObj.start, 0)
+
+        console.log(myObj)
 
         let scoreExplore = function (bObj) {
             bObj.score = ai.scoreBoard(bObj.board, bObj.turn)
             for (item in bObj) {
-                if (item !== "turn" && item !== "score" && item !== "board") {
+                if (item !== "turn" && item !== "score" && item !== "board" && item !== "meta" && item !== "pruneDump") {
                     scoreExplore(bObj[item])
                 }
             }
@@ -757,28 +855,65 @@ const ai = {
         scoreExplore(myObj.start)
 
         let metaExplore = function (bObj) {
-            let reducer = (accumulator, currentValue) => accumulator + currentValue;
             let metaArr = []
-
             if (Object.keys(bObj).length < 5) {
                 return bObj.score
             }
 
+            let canPruneMeta = true;
             for (item in bObj) {
-                if (item !== "turn" && item !== "score" && item !== "board" && item !== "meta") {
+                if (item !== "turn" && item !== "score" && item !== "board" && item !== "meta" && item !== "pruneDump") {
+                    if (bObj[item].meta === undefined) {
+                        canPruneMeta = false;
+                    }
+                }
+            }
+            if (canPruneMeta === true) {
+                bObj = ai.pruneMeta(bObj)
+            }
+
+            for (item in bObj) {
+                if (item !== "turn" && item !== "score" && item !== "board" && item !== "meta" && item !== "pruneDump") {
                     metaArr.push(metaExplore(bObj[item]))
                 }
             }
-            if(bObj.meta === undefined){
-                bObj.meta = ((metaArr.reduce(reducer)) / metaArr.length)
+
+            metaArr = metaArr.sort(function (a, b) {
+                return a - b;
+            })
+
+            // console.log(metaArr)
+
+            if(turn === "B"){
+                metaArr = metaArr.slice(-2)
             } else {
-                bObj.meta = (((metaArr.reduce(reducer)) / metaArr.length)+bObj.meta)/2
+                metaArr = metaArr.slice(0, 2)
             }
+
+            // console.log(metaArr)
+
+            bObj.meta = ((metaArr[0] + metaArr[1]) / metaArr.length)
+
+            // console.log(bObj.meta)
+
             return bObj.meta
         }
 
-        for(let i = 0; i <=3; i++){
+        for (let i = 0; i <= 3; i++) {
             metaExplore(myObj.start)
+        }
+        for (item in myObj.start) {
+            if (item !== "turn" && item !== "score" && item !== "board" && item !== "meta" && item !== "pruneDump") {
+                explore(newBoard(myObj.start[item].board), changeTurn(turn), inc(iteration), myObj.start[item], 2)
+                console.log(myObj)
+                scoreExplore(myObj.start[item])
+
+                for (let i = 0; i <= 3; i++) {
+                    if (myObj.start[item] !== undefined) {
+                        metaExplore(myObj.start[item])
+                    }
+                }
+            }
         }
         return myObj
     },
